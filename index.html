@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Principio de Incertidumbre - Paquete Gaussiano</title>
+    <title>Principio de Incertidumbre - Paquete Gaussiano Símétrico</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -28,7 +28,7 @@
         }
         .slider-wrapper {
             margin: 20px 0;
-        }
+            }
         input[type=range] {
             width: 80%;
             max-width: 400px;
@@ -60,7 +60,7 @@
 
     <div class="header">
         <h1>Simulador: Principio de Incertidumbre de Heisenberg</h1>
-        <p>Visualización del espacio de posición y momento para un paquete de ondas Gaussiano.</p>
+        <p>Visualización del espacio de posición y momento con paquete de ondas simétrico.</p>
     </div>
 
     <div class="controls-container">
@@ -109,44 +109,67 @@
         const ctxPos = document.getElementById('positionChart').getContext('2d');
         const ctxMom = document.getElementById('momentumChart').getContext('2d');
 
+        // MODIFICACIÓN SÚRGICA: Escala simétrica de -2.5 a 2.5
         const commonOptions = {
             responsive: true,
-            animation: { duration: 0 }, // Cero para interactividad fluida
-            elements: { point: { radius: 0 } }, // Ocultar puntos
+            animation: { duration: 0 }, 
+            elements: { point: { radius: 0 } }, 
             scales: {
                 x: { ticks: { maxTicksLimit: 11 } },
-                y: { min: 0, max: 2.5 } // Fijar el eje Y para ver cómo cambia la amplitud
+                y: { min: -2.5, max: 2.5 } 
             }
         };
 
+        // MODIFICACIÓN SÚRGICA: Añadido un segundo dataset (reflejo)
         let posChart = new Chart(ctxPos, {
             type: 'line',
             data: {
                 labels: [],
-                datasets: [{
-                    label: '|Ψ(x)|² (Densidad en Posición)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderWidth: 2,
-                    fill: true,
-                    data: []
-                }]
+                datasets: [
+                    {
+                        label: '|Ψ(x)|² (Envolvente Superior)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        data: []
+                    },
+                    {
+                        label: '|Ψ(x)|² (Envolvente Inferior)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)', // Ligeramente más tenue para efecto visual
+                        borderWidth: 2,
+                        fill: true,
+                        data: []
+                    }
+                ]
             },
             options: commonOptions
         });
 
+        // MODIFICACIÓN SÚRGICA: Añadido un segundo dataset (reflejo)
         let momChart = new Chart(ctxMom, {
             type: 'line',
             data: {
                 labels: [],
-                datasets: [{
-                    label: '|Φ(k)|² (Distribución en Momento)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderWidth: 2,
-                    fill: true,
-                    data: []
-                }]
+                datasets: [
+                    {
+                        label: '|Φ(k)|² (Envolvente Superior)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        data: []
+                    },
+                    {
+                        label: '|Φ(k)|² (Envolvente Inferior)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)', // Ligeramente más tenue
+                        borderWidth: 2,
+                        fill: true,
+                        data: []
+                    }
+                ]
             },
             options: commonOptions
         });
@@ -161,16 +184,20 @@
             document.getElementById('dxDisplay').innerText = `Δx ≈ ${sigmaX.toFixed(4)}`;
             document.getElementById('productDisplay').innerText = `Δx × Δk = ${(sigmaX * sigmaK).toFixed(4)}`;
 
-            // Actualizar datos de gráficas (Rango de -8 a 8 para visualizar bien la campana)
+            // Generar los datos base
             const posData = generateData(sigmaX, 8);
             const momData = generateData(sigmaK, 8);
 
+            // MODIFICACIÓN SÚRGICA: Actualizar envolvente superior e inferior
             posChart.data.labels = posData.labels;
-            posChart.data.datasets[0].data = posData.data;
+            posChart.data.datasets[0].data = posData.data; // Superior
+            posChart.data.datasets[1].data = posData.data.map(y => -y); // Inferior (reflejo)
             posChart.update();
 
+            // MODIFICACIÓN SÚRGICA: Actualizar envolvente superior e inferior
             momChart.data.labels = momData.labels;
-            momChart.data.datasets[0].data = momData.data;
+            momChart.data.datasets[0].data = momData.data; // Superior
+            momChart.data.datasets[1].data = momData.data.map(y => -y); // Inferior (reflejo)
             momChart.update();
         }
 
