@@ -239,8 +239,6 @@
         const vectorPoints = [];
         
         // CORRECCIÓN FÍSICA Y GRÁFICA:
-        // Generamos coordenadas normalizadas dentro del área del círculo unitario.
-        // Math.sqrt() asegura una distribución uniforme de probabilidad en el área 2D.
         for(let i = 0; i < 60; i++) {
             const r = Math.sqrt(Math.random()) * 1.2; 
             const theta = Math.random() * 2 * Math.PI;
@@ -284,9 +282,18 @@
             ctxCanvas.fillStyle = gradient;
             ctxCanvas.fill();
 
-            // Dibujar vectores basándose en las coordenadas normalizadas escaladas
-            vectorPoints.forEach(point => {
-                // Al multiplicar por currentSigmaXCanvas, los vectores "respiran" junto con la nube
+            // NUEVA LÓGICA: Determinar el número de vectores visibles basándose en la incertidumbre del momento
+            // Map the currentSigmaPCanvas (range approx. 12 to 240) to a number of vectors (1 to 60)
+            let maxVectors = 60;
+            let numVisibleVectors = Math.floor((currentSigmaPCanvas / 100) * maxVectors);
+            
+            // Asegurarse de que siempre se dibuje al menos un vector (la onda plana pura)
+            numVisibleVectors = Math.max(1, Math.min(maxVectors, numVisibleVectors));
+
+            // Dibujar solo la cantidad calculada de vectores
+            for (let i = 0; i < numVisibleVectors; i++) {
+                const point = vectorPoints[i];
+                
                 const actualX = point.normX * currentSigmaXCanvas;
                 const actualY = point.normY * currentSigmaXCanvas;
                 
@@ -294,7 +301,7 @@
                 const randomAngle = point.baseAngle + (Math.random() - 0.5) * (currentSigmaPCanvas / 20);
                 
                 drawArrow(centerX + actualX, centerY + actualY, randomLength, randomAngle);
-            });
+            }
         }
 
         function animateCanvas() {
