@@ -14,7 +14,7 @@
             background-color: #1a1a2e;
             color: #fff;
             margin: 0;
-            padding: 15px; /* Reducido para ahorrar espacio */
+            padding: 15px; 
         }
         .header {
             text-align: center;
@@ -62,7 +62,7 @@
         }
         .panel {
             flex: 1;
-            min-width: 350px; /* Reducido para permitir pantallas más pequeñas */
+            min-width: 350px; 
             background: #16213e;
             padding: 15px;
             border-radius: 10px;
@@ -81,7 +81,7 @@
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 15px;
-            height: 250px; /* ALTURA FORZADA PARA HACERLO MÁS PEQUEÑO */
+            height: 250px; 
             position: relative;
         }
 
@@ -96,7 +96,7 @@
             background-color: #0f3460;
             border-radius: 10px;
             width: 100%;
-            max-width: 400px; /* REDUCIDO DE 500px a 400px */
+            max-width: 400px; 
             height: auto;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
@@ -175,10 +175,9 @@
         const ctxPos = document.getElementById('positionChart').getContext('2d');
         const ctxMom = document.getElementById('momentumChart').getContext('2d');
 
-        // Opciones base compartidas
         const commonOptions = {
             responsive: true,
-            maintainAspectRatio: false, // CLAVE PARA QUE OBEDEZCA EL HEIGHT DE 250PX
+            maintainAspectRatio: false, 
             animation: { duration: 0 }, 
             elements: { point: { radius: 0 } }, 
             scales: {
@@ -187,7 +186,6 @@
             }
         };
 
-        // Opciones específicas para Posición (Añadido Título)
         const posOptions = {
             ...commonOptions,
             plugins: {
@@ -196,7 +194,6 @@
             }
         };
 
-        // Opciones específicas para Momento (Añadido Título)
         const momOptions = {
             ...commonOptions,
             plugins: {
@@ -241,11 +238,15 @@
         const sharedBaseAngle = -Math.PI / 4; 
         const vectorPoints = [];
         
-        // El área de dispersión inicial también se reduce un poco para encajar en 400x400
+        // CORRECCIÓN FÍSICA Y GRÁFICA:
+        // Generamos coordenadas normalizadas dentro del área del círculo unitario.
+        // Math.sqrt() asegura una distribución uniforme de probabilidad en el área 2D.
         for(let i = 0; i < 60; i++) {
+            const r = Math.sqrt(Math.random()) * 1.2; 
+            const theta = Math.random() * 2 * Math.PI;
             vectorPoints.push({
-                x: (Math.random() - 0.5) * 320,
-                y: (Math.random() - 0.5) * 320,
+                normX: r * Math.cos(theta),
+                normY: r * Math.sin(theta),
                 baseAngle: sharedBaseAngle 
             });
         }
@@ -283,13 +284,16 @@
             ctxCanvas.fillStyle = gradient;
             ctxCanvas.fill();
 
+            // Dibujar vectores basándose en las coordenadas normalizadas escaladas
             vectorPoints.forEach(point => {
-                const distFromCenter = Math.sqrt(point.x*point.x + point.y*point.y);
-                if (distFromCenter < currentSigmaXCanvas * 1.2) {
-                    const randomLength = currentSigmaPCanvas * (0.5 + Math.random() * 0.5);
-                    const randomAngle = point.baseAngle + (Math.random() - 0.5) * (currentSigmaPCanvas / 20);
-                    drawArrow(centerX + point.x, centerY + point.y, randomLength, randomAngle);
-                }
+                // Al multiplicar por currentSigmaXCanvas, los vectores "respiran" junto con la nube
+                const actualX = point.normX * currentSigmaXCanvas;
+                const actualY = point.normY * currentSigmaXCanvas;
+                
+                const randomLength = currentSigmaPCanvas * (0.5 + Math.random() * 0.5);
+                const randomAngle = point.baseAngle + (Math.random() - 0.5) * (currentSigmaPCanvas / 20);
+                
+                drawArrow(centerX + actualX, centerY + actualY, randomLength, randomAngle);
             });
         }
 
@@ -323,7 +327,6 @@
             momChart.data.datasets[1].data = momData.data.map(y => -y); 
             momChart.update();
 
-            // ESCALADO AJUSTADO PARA EL NUEVO TAMAÑO DE CANVAS (400x400)
             currentSigmaXCanvas = sigmaX * 64; 
             currentSigmaPCanvas = 4000 / currentSigmaXCanvas;
 
