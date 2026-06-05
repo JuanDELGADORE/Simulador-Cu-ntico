@@ -81,13 +81,17 @@
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         
+        // CORRECCIÓN FÍSICA: Definimos UN solo momento base para todo el estado cuántico.
+        // Elegimos un ángulo arbitrario (ej. -pi/4 apuntando hacia arriba a la derecha).
+        const sharedBaseAngle = -Math.PI / 4; 
+
         // Generamos posiciones aleatorias fijas para las flechas dentro de un área máxima
         const vectorPoints = [];
         for(let i = 0; i < 60; i++) {
             vectorPoints.push({
                 x: (Math.random() - 0.5) * 400,
                 y: (Math.random() - 0.5) * 400,
-                baseAngle: Math.random() * Math.PI * 2
+                baseAngle: sharedBaseAngle // Todas apuntan inicialmente en la misma dirección
             });
         }
 
@@ -138,6 +142,7 @@
                 if (distFromCenter < sigmaX * 1.2) {
                     
                     // La longitud y la variación del ángulo dependen de la incertidumbre del momento (sigmaP)
+                    // Con poca incertidumbre, randomAngle se mantiene fiel a baseAngle.
                     const randomLength = sigmaP * (0.5 + Math.random() * 0.5);
                     const randomAngle = point.baseAngle + (Math.random() - 0.5) * (sigmaP / 20);
 
