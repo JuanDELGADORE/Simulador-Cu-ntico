@@ -14,38 +14,42 @@
             background-color: #1a1a2e;
             color: #fff;
             margin: 0;
-            padding: 20px;
+            padding: 15px; /* Reducido para ahorrar espacio */
         }
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin-top: 0;
+            font-size: 1.8em;
         }
         p.description {
             color: #a2a2bd;
-            font-size: 1.1em;
-            margin-bottom: 20px;
+            font-size: 1em;
+            margin-bottom: 15px;
         }
         
         /* Contenedor del Slider Maestro */
         .master-controls {
             background: #16213e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
             text-align: center;
         }
         input[type=range] {
             width: 80%;
-            max-width: 600px;
+            max-width: 500px;
             cursor: pointer;
-            margin: 15px 0;
+            margin: 10px 0;
         }
         .stats-master {
             display: flex;
             justify-content: center;
-            gap: 40px;
-            font-size: 1.2em;
+            gap: 30px;
+            font-size: 1.1em;
             font-weight: bold;
             color: #4ecca3;
         }
@@ -58,24 +62,27 @@
         }
         .panel {
             flex: 1;
-            min-width: 400px;
+            min-width: 350px; /* Reducido para permitir pantallas más pequeñas */
             background: #16213e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         .panel h2 {
             text-align: center;
             color: #e94560;
             margin-top: 0;
+            font-size: 1.3em;
         }
 
         /* Estilos específicos Panel Izquierdo (Chart.js) */
         .chart-box {
-            background: white; /* Fondo blanco para contraste de gráficas */
+            background: white; 
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 15px;
+            height: 250px; /* ALTURA FORZADA PARA HACERLO MÁS PEQUEÑO */
+            position: relative;
         }
 
         /* Estilos específicos Panel Derecho (Canvas) */
@@ -83,20 +90,22 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            width: 100%;
         }
         canvas {
             background-color: #0f3460;
             border-radius: 10px;
             width: 100%;
-            max-width: 500px; /* Ajuste para mantener proporción */
+            max-width: 400px; /* REDUCIDO DE 500px a 400px */
             height: auto;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
         .divulgativo-text {
             text-align: center;
             color: #a2a2bd;
             font-weight: bold;
             margin-top: 15px;
+            font-size: 0.95em;
         }
     </style>
 </head>
@@ -133,7 +142,7 @@
         <div class="panel">
             <h2>Intuición: Nube y Corriente</h2>
             <div class="canvas-container">
-                <canvas id="quantumCanvas" width="500" height="500"></canvas>
+                <canvas id="quantumCanvas" width="400" height="400"></canvas>
             </div>
             <div class="divulgativo-text" id="divulgativoText">
                 Precisión en Posición: Media <br> Incertidumbre en Velocidad: Media
@@ -166,16 +175,33 @@
         const ctxPos = document.getElementById('positionChart').getContext('2d');
         const ctxMom = document.getElementById('momentumChart').getContext('2d');
 
+        // Opciones base compartidas
         const commonOptions = {
             responsive: true,
+            maintainAspectRatio: false, // CLAVE PARA QUE OBEDEZCA EL HEIGHT DE 250PX
             animation: { duration: 0 }, 
             elements: { point: { radius: 0 } }, 
             scales: {
                 x: { ticks: { maxTicksLimit: 11 } },
                 y: { min: -2.5, max: 2.5 } 
-            },
+            }
+        };
+
+        // Opciones específicas para Posición (Añadido Título)
+        const posOptions = {
+            ...commonOptions,
             plugins: {
-                legend: { labels: { color: '#333' } } // Mantener texto oscuro para fondo blanco
+                legend: { labels: { color: '#333' } },
+                title: { display: true, text: 'Espacio de Posición (Δx)', color: '#1a1a2e', font: { size: 14 } }
+            }
+        };
+
+        // Opciones específicas para Momento (Añadido Título)
+        const momOptions = {
+            ...commonOptions,
+            plugins: {
+                legend: { labels: { color: '#333' } },
+                title: { display: true, text: 'Espacio de Momento (Δk)', color: '#1a1a2e', font: { size: 14 } }
             }
         };
 
@@ -188,7 +214,7 @@
                     { label: '|Ψ(x)|² (Inferior)', borderColor: 'rgba(54, 162, 235, 1)', backgroundColor: 'rgba(54, 162, 235, 0.1)', borderWidth: 2, fill: true, data: [] }
                 ]
             },
-            options: commonOptions
+            options: posOptions
         });
 
         let momChart = new Chart(ctxMom, {
@@ -200,7 +226,7 @@
                     { label: '|Φ(k)|² (Inferior)', borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.1)', borderWidth: 2, fill: true, data: [] }
                 ]
             },
-            options: commonOptions
+            options: momOptions
         });
 
 
@@ -215,18 +241,17 @@
         const sharedBaseAngle = -Math.PI / 4; 
         const vectorPoints = [];
         
-        // Generar puntos aleatorios para los vectores en la nube
+        // El área de dispersión inicial también se reduce un poco para encajar en 400x400
         for(let i = 0; i < 60; i++) {
             vectorPoints.push({
-                x: (Math.random() - 0.5) * 400,
-                y: (Math.random() - 0.5) * 400,
+                x: (Math.random() - 0.5) * 320,
+                y: (Math.random() - 0.5) * 320,
                 baseAngle: sharedBaseAngle 
             });
         }
 
-        // Variables globales para la animación que se actualizarán con el slider
-        let currentSigmaXCanvas = 100;
-        let currentSigmaPCanvas = 50;
+        let currentSigmaXCanvas = 80;
+        let currentSigmaPCanvas = 40;
 
         function drawArrow(x, y, length, angle) {
             ctxCanvas.beginPath();
@@ -248,7 +273,6 @@
         function drawCanvasScene() {
             ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Nube de Probabilidad
             const gradient = ctxCanvas.createRadialGradient(centerX, centerY, 0, centerX, centerY, currentSigmaXCanvas);
             gradient.addColorStop(0, 'rgba(78, 204, 163, 0.8)');
             gradient.addColorStop(0.5, 'rgba(78, 204, 163, 0.3)');
@@ -259,7 +283,6 @@
             ctxCanvas.fillStyle = gradient;
             ctxCanvas.fill();
 
-            // Flechas de Momento
             vectorPoints.forEach(point => {
                 const distFromCenter = Math.sqrt(point.x*point.x + point.y*point.y);
                 if (distFromCenter < currentSigmaXCanvas * 1.2) {
@@ -270,7 +293,6 @@
             });
         }
 
-        // Bucle de animación independiente para el efecto de vibración
         function animateCanvas() {
             drawCanvasScene();
             requestAnimationFrame(animateCanvas);
@@ -282,15 +304,12 @@
            CONTROL MAESTRO: SINCRONIZADOR
            ========================================= */
         function syncAllVisualizations() {
-            // 1. Leer el valor del deslizador maestro (k)
             const sigmaK = parseFloat(document.getElementById('masterSlider').value);
             const sigmaX = 0.5 / sigmaK; 
 
-            // 2. Actualizar textos del Dashboard
             document.getElementById('masterDk').innerText = `Δk = ${sigmaK.toFixed(4)}`;
             document.getElementById('masterDx').innerText = `Δx ≈ ${sigmaX.toFixed(4)}`;
 
-            // 3. Actualizar Gráficas (Chart.js)
             const posData = generateData(sigmaX, 8);
             const momData = generateData(sigmaK, 8);
 
@@ -304,26 +323,21 @@
             momChart.data.datasets[1].data = momData.data.map(y => -y); 
             momChart.update();
 
-            // 4. Transformar los valores matemáticos para la escala visual del Canvas
-            // Multiplicamos sigmaX por un factor de escala (ej. 80) para que se vea bien en pixeles
-            currentSigmaXCanvas = sigmaX * 80;
-            currentSigmaPCanvas = 5000 / currentSigmaXCanvas;
+            // ESCALADO AJUSTADO PARA EL NUEVO TAMAÑO DE CANVAS (400x400)
+            currentSigmaXCanvas = sigmaX * 64; 
+            currentSigmaPCanvas = 4000 / currentSigmaXCanvas;
 
-            // 5. Actualizar textos divulgativos basados en la escala del canvas
             const textDiv = document.getElementById('divulgativoText');
-            if (currentSigmaXCanvas < 60) {
+            if (currentSigmaXCanvas < 48) {
                 textDiv.innerHTML = "Precisión en Posición: ALTA (Partícula acorralada) <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: ALTA (Momento caótico)</span>";
-            } else if (currentSigmaXCanvas > 150) {
-                textDiv.innerHTML = "Precisión en Posición: BAJA (Nube muy difusa) <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: BAJA (Momento altamente predecible)</span>";
+            } else if (currentSigmaXCanvas > 120) {
+                textDiv.innerHTML = "Precisión en Posición: BAJA (Nube muy difusa) <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: BAJA (Momento predecible)</span>";
             } else {
                 textDiv.innerHTML = "Precisión en Posición: Media <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: Media</span>";
             }
         }
 
-        // Escuchar el deslizador maestro
         document.getElementById('masterSlider').addEventListener('input', syncAllVisualizations);
-
-        // Disparo inicial para alinear todo al cargar la página
         syncAllVisualizations();
     </script>
 </body>
