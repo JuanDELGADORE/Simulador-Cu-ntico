@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Principio de Incertidumbre - Paquete Gaussiano Símétrico</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Espacio de Fases Cuántico - Función de Wigner</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,7 +28,7 @@
         }
         .slider-wrapper {
             margin: 20px 0;
-            }
+        }
         input[type=range] {
             width: 80%;
             max-width: 400px;
@@ -41,171 +41,118 @@
             color: #2c3e50;
             margin-top: 15px;
         }
-        .charts-container {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
         .chart-box {
-            flex: 1;
-            min-width: 300px;
             background: white;
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            height: 600px;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Simulador: Principio de Incertidumbre de Heisenberg</h1>
-        <p>Visualización del espacio de posición y momento con paquete de ondas simétrico.</p>
+        <h1>Simulador: Función de Wigner en el Espacio de Fases</h1>
+        <p>Visualización del límite incompresible del Principio de Incertidumbre para un estado Gaussiano.</p>
     </div>
 
     <div class="controls-container">
-        <h3>Control de Dispersión</h3>
+        <h3>Control del Estado Cuántico</h3>
         <div class="slider-wrapper">
-            <label for="sigmaKSlider"><strong>Δk (Dispersión en momento):</strong> <span id="kValue">0.80</span></label><br>
-            <input type="range" id="sigmaKSlider" min="0.1" max="3" step="0.05" value="0.8">
+            <label for="sigmaKSlider"><strong>Δp (Incertidumbre en momento):</strong> <span id="kValue">1.00</span></label><br>
+            <input type="range" id="sigmaKSlider" min="0.25" max="2.0" step="0.05" value="1.0">
         </div>
         
         <div class="stats">
-            <div id="dxDisplay">Δx ≈ 0.6250</div>
-            <div id="productDisplay">Δx × Δk = 0.5000</div>
+            <div id="dxDisplay">Δx = 0.5000</div>
+            <div id="productDisplay">Δx × Δp = 0.5000 (Límite ħ/2)</div>
         </div>
     </div>
 
-    <div class="charts-container">
-        <div class="chart-box">
-            <canvas id="positionChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <canvas id="momentumChart"></canvas>
-        </div>
+    <div class="chart-box">
+        <div id="wignerPlot" style="width: 100%; height: 100%;"></div>
     </div>
 
     <script>
-        // Función para calcular la campana de Gauss
-        function gaussian(x, sigma) {
-            const coef = 1 / (sigma * Math.sqrt(2 * Math.PI));
-            const expo = Math.exp(-0.5 * Math.pow(x / sigma, 2));
-            return coef * expo;
+        // Configuración de la malla (Grid)
+        const gridSize = 100;
+        const limit = 4;
+        const xValues = [];
+        const pValues = [];
+        
+        for (let i = 0; i <= gridSize; i++) {
+            let val = -limit + (2 * limit * i) / gridSize;
+            xValues.push(val);
+            pValues.push(val);
         }
 
-        // Generar datos para los ejes X y K
-        function generateData(sigma, limit = 10, points = 200) {
-            const labels = [];
-            const data = [];
-            const step = (2 * limit) / points;
-            for (let i = -limit; i <= limit; i += step) {
-                labels.push(i.toFixed(2));
-                data.push(gaussian(i, sigma));
+        // Función para calcular la matriz de Wigner W(x, p)
+        function calculateWignerMatrix(sigmaP) {
+            const sigmaX = 0.5 / sigmaP; // Relación estricta del paquete gaussiano
+            const zValues = [];
+
+            for (let i = 0; i < pValues.length; i++) {
+                const p = pValues[i];
+                const row = [];
+                for (let j = 0; j < xValues.length; j++) {
+                    const x = xValues[j];
+                    // W(x,p) para un paquete gaussiano (con hbar = 1)
+                    // W(x,p) = (1/pi) * exp( -x^2/(2*sigmaX^2) - p^2/(2*sigmaP^2) )
+                    const exponent = -Math.pow(x, 2) / (2 * Math.pow(sigmaX, 2)) - Math.pow(p, 2) / (2 * Math.pow(sigmaP, 2));
+                    const w = (1 / Math.PI) * Math.exp(exponent);
+                    row.push(w);
+                }
+                zValues.push(row);
             }
-            return { labels, data };
+            return { zValues, sigmaX };
         }
 
-        // Configuración inicial de las gráficas
-        const ctxPos = document.getElementById('positionChart').getContext('2d');
-        const ctxMom = document.getElementById('momentumChart').getContext('2d');
+        // Renderizado inicial con Plotly
+        const initialSigmaP = 1.0;
+        const initialData = calculateWignerMatrix(initialSigmaP);
 
-        // MODIFICACIÓN SÚRGICA: Escala simétrica de -2.5 a 2.5
-        const commonOptions = {
-            responsive: true,
-            animation: { duration: 0 }, 
-            elements: { point: { radius: 0 } }, 
-            scales: {
-                x: { ticks: { maxTicksLimit: 11 } },
-                y: { min: -2.5, max: 2.5 } 
+        const data = [{
+            z: initialData.zValues,
+            x: xValues,
+            y: pValues,
+            type: 'contour', // Mapa de contorno topográfico
+            colorscale: 'Portland',
+            contours: {
+                coloring: 'heatmap'
+            },
+            colorbar: {
+                title: 'W(x,p)',
+                titleside: 'right'
             }
+        }];
+
+        const layout = {
+            title: 'Distribución de Cuasiprobabilidad W(x,p)',
+            xaxis: { title: 'Posición (x)', range: [-limit, limit] },
+            yaxis: { title: 'Momento (p)', range: [-limit, limit] },
+            autosize: true,
+            margin: { l: 60, r: 20, b: 60, t: 40 }
         };
 
-        // MODIFICACIÓN SÚRGICA: Añadido un segundo dataset (reflejo)
-        let posChart = new Chart(ctxPos, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: '|Ψ(x)|² (Envolvente Superior)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderWidth: 2,
-                        fill: true,
-                        data: []
-                    },
-                    {
-                        label: '|Ψ(x)|² (Envolvente Inferior)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)', // Ligeramente más tenue para efecto visual
-                        borderWidth: 2,
-                        fill: true,
-                        data: []
-                    }
-                ]
-            },
-            options: commonOptions
-        });
-
-        // MODIFICACIÓN SÚRGICA: Añadido un segundo dataset (reflejo)
-        let momChart = new Chart(ctxMom, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: '|Φ(k)|² (Envolvente Superior)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderWidth: 2,
-                        fill: true,
-                        data: []
-                    },
-                    {
-                        label: '|Φ(k)|² (Envolvente Inferior)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.1)', // Ligeramente más tenue
-                        borderWidth: 2,
-                        fill: true,
-                        data: []
-                    }
-                ]
-            },
-            options: commonOptions
-        });
+        Plotly.newPlot('wignerPlot', data, layout, {responsive: true});
 
         // Función de actualización interactiva
-        function updateCharts() {
-            const sigmaK = parseFloat(document.getElementById('sigmaKSlider').value);
-            const sigmaX = 0.5 / sigmaK; // Relación de incertidumbre mínima
+        function updatePlot() {
+            const sigmaP = parseFloat(document.getElementById('sigmaKSlider').value);
+            const { zValues, sigmaX } = calculateWignerMatrix(sigmaP);
 
-            // Actualizar textos
-            document.getElementById('kValue').innerText = sigmaK.toFixed(2);
-            document.getElementById('dxDisplay').innerText = `Δx ≈ ${sigmaX.toFixed(4)}`;
-            document.getElementById('productDisplay').innerText = `Δx × Δk = ${(sigmaX * sigmaK).toFixed(4)}`;
+            // Actualizar interfaz
+            document.getElementById('kValue').innerText = sigmaP.toFixed(2);
+            document.getElementById('dxDisplay').innerText = `Δx = ${sigmaX.toFixed(4)}`;
 
-            // Generar los datos base
-            const posData = generateData(sigmaX, 8);
-            const momData = generateData(sigmaK, 8);
-
-            // MODIFICACIÓN SÚRGICA: Actualizar envolvente superior e inferior
-            posChart.data.labels = posData.labels;
-            posChart.data.datasets[0].data = posData.data; // Superior
-            posChart.data.datasets[1].data = posData.data.map(y => -y); // Inferior (reflejo)
-            posChart.update();
-
-            // MODIFICACIÓN SÚRGICA: Actualizar envolvente superior e inferior
-            momChart.data.labels = momData.labels;
-            momChart.data.datasets[0].data = momData.data; // Superior
-            momChart.data.datasets[1].data = momData.data.map(y => -y); // Inferior (reflejo)
-            momChart.update();
+            // Actualizar los datos Z de la gráfica de Plotly sin recargar todo el layout
+            Plotly.update('wignerPlot', { z: [zValues] });
         }
 
-        // Escuchar cambios en el deslizador
-        document.getElementById('sigmaKSlider').addEventListener('input', updateCharts);
-
-        // Renderizado inicial
-        updateCharts();
+        // Escuchar cambios en el deslizador (usamos 'input' para actualización en tiempo real)
+        document.getElementById('sigmaKSlider').addEventListener('input', updatePlot);
     </script>
 </body>
 </html>
