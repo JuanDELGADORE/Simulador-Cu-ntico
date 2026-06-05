@@ -6,9 +6,8 @@
     <title>Dashboard Cuántico - Principio de Incertidumbre</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1a1a2e;
@@ -16,17 +15,16 @@
             margin: 0;
             padding: 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+
         p.description {
             color: #a2a2bd;
             font-size: 1.1em;
             margin-bottom: 20px;
         }
-        
-        /* Contenedor del Slider Maestro */
+
+        /* ── Slider maestro ── */
         .master-controls {
             background: #16213e;
             padding: 20px;
@@ -50,7 +48,7 @@
             color: #4ecca3;
         }
 
-        /* Layout de las dos columnas */
+        /* ── Layout dos columnas ── */
         .dashboard {
             display: flex;
             flex-wrap: wrap;
@@ -63,268 +61,386 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .panel h2 {
             text-align: center;
-            color: #e94560;
             margin-top: 0;
-        }
-
-        /* Estilos específicos Panel Izquierdo (Chart.js) */
-        .chart-box {
-            background: white; /* Fondo blanco para contraste de gráficas */
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }
-
-        /* Estilos específicos Panel Derecho (Canvas) */
-        .canvas-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-        }
-        canvas {
-            background-color: #0f3460;
-            border-radius: 10px;
             width: 100%;
-            max-width: 500px; /* Ajuste para mantener proporción */
+        }
+        .panel-left  h2 { color: #4ec9e4; }
+        .panel-right h2 { color: #e94560; }
+
+        /* ── Cajas de gráficas Chart.js ── */
+        .chart-box {
+            background: white;
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            width: 100%;
+            height: 140px;       /* altura fija y compacta */
+            position: relative;
+        }
+
+        /* ── Canvas visualizaciones ── */
+        .viz-canvas {
+            border-radius: 10px;
+            display: block;
+        }
+        #positionCloud {
+            background-color: #0f3460;
+            width: 100%;
+            max-width: 460px;
             height: auto;
         }
+        #momentumVector {
+            background-color: #0f3460;
+            width: 100%;
+            max-width: 460px;
+            height: auto;
+        }
+
+        /* ── Texto divulgativo ── */
         .divulgativo-text {
             text-align: center;
             color: #a2a2bd;
             font-weight: bold;
-            margin-top: 15px;
+            margin-top: 12px;
+            font-size: 0.95em;
+            min-height: 44px;
+        }
+
+        /* ── Etiquetas de cada canvas ── */
+        .canvas-label {
+            font-size: 0.85em;
+            color: #a2a2bd;
+            text-align: center;
+            margin-bottom: 6px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Principio de Incertidumbre de Heisenberg</h1>
-        <p class="description">Dashboard interactivo: Sincronización del formalismo analítico y la intuición espacial.</p>
-    </div>
+<div class="header">
+    <h1>Principio de Incertidumbre de Heisenberg</h1>
+    <p class="description">Dashboard interactivo: Formalismo analítico e intuición espacial sincronizados.</p>
+</div>
 
-    <div class="master-controls">
-        <label for="masterSlider"><strong>Ajustar el Estado Cuántico (Control de Dispersión Δk)</strong></label><br>
-        <input type="range" id="masterSlider" min="0.1" max="3" step="0.05" value="0.8">
-        
-        <div class="stats-master">
-            <div id="masterDx">Δx ≈ 0.6250</div>
-            <div id="masterDk">Δk = 0.8000</div>
-            <div>Δx × Δk = 0.5000</div>
+<!-- SLIDER MAESTRO -->
+<div class="master-controls">
+    <label for="masterSlider"><strong>Ajustar el Estado Cuántico (Control de Dispersión Δk)</strong></label><br>
+    <input type="range" id="masterSlider" min="0.1" max="3" step="0.05" value="0.8">
+    <div class="stats-master">
+        <div id="masterDx">Δx ≈ 0.6250</div>
+        <div id="masterDk">Δk = 0.8000</div>
+        <div>Δx × Δk = 0.5000</div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+    <!-- ══════════════════════════════
+         PANEL IZQUIERDO: POSICIÓN
+         ══════════════════════════════ -->
+    <div class="panel panel-left">
+        <h2>Posición: Ψ(x)</h2>
+
+        <!-- Gráfica analítica de posición -->
+        <div class="chart-box">
+            <canvas id="positionChart"></canvas>
+        </div>
+
+        <!-- Nube de probabilidad de posición -->
+        <div class="canvas-label">Nube de Probabilidad |Ψ(x)|²</div>
+        <canvas id="positionCloud" class="viz-canvas" width="460" height="200"></canvas>
+        <div class="divulgativo-text" id="textPosition">
+            Precisión en Posición: Media
         </div>
     </div>
 
-    <div class="dashboard">
-        
-        <div class="panel">
-            <h2>Formalismo: Envolventes</h2>
-            <div class="chart-box">
-                <canvas id="positionChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <canvas id="momentumChart"></canvas>
-            </div>
+    <!-- ══════════════════════════════
+         PANEL DERECHO: MOMENTO
+         ══════════════════════════════ -->
+    <div class="panel panel-right">
+        <h2>Momento: Φ(k)</h2>
+
+        <!-- Gráfica analítica de momento -->
+        <div class="chart-box">
+            <canvas id="momentumChart"></canvas>
         </div>
 
-        <div class="panel">
-            <h2>Intuición: Nube y Corriente</h2>
-            <div class="canvas-container">
-                <canvas id="quantumCanvas" width="500" height="500"></canvas>
-            </div>
-            <div class="divulgativo-text" id="divulgativoText">
-                Precisión en Posición: Media <br> Incertidumbre en Velocidad: Media
-            </div>
+        <!-- Vector de momento único -->
+        <div class="canvas-label">Vector de Momento p̂</div>
+        <canvas id="momentumVector" class="viz-canvas" width="460" height="200"></canvas>
+        <div class="divulgativo-text" id="textMomentum">
+            Incertidumbre en Momento: Media
         </div>
-
     </div>
 
-    <script>
-        /* =========================================
-           LÓGICA DEL PANEL IZQUIERDO (CHART.JS)
-           ========================================= */
-        function gaussian(x, sigma) {
-            const coef = 1 / (sigma * Math.sqrt(2 * Math.PI));
-            const expo = Math.exp(-0.5 * Math.pow(x / sigma, 2));
-            return coef * expo;
-        }
+</div>
 
-        function generateData(sigma, limit = 10, points = 200) {
-            const labels = [];
-            const data = [];
-            const step = (2 * limit) / points;
-            for (let i = -limit; i <= limit; i += step) {
-                labels.push(i.toFixed(2));
-                data.push(gaussian(i, sigma));
-            }
-            return { labels, data };
-        }
+<script>
+/* ═══════════════════════════════════════════════
+   UTILIDADES MATEMÁTICAS
+   ═══════════════════════════════════════════════ */
+function gaussian(x, sigma) {
+    const coef = 1 / (sigma * Math.sqrt(2 * Math.PI));
+    return coef * Math.exp(-0.5 * Math.pow(x / sigma, 2));
+}
 
-        const ctxPos = document.getElementById('positionChart').getContext('2d');
-        const ctxMom = document.getElementById('momentumChart').getContext('2d');
+function generateData(sigma, limit = 10, points = 200) {
+    const labels = [], data = [];
+    const step = (2 * limit) / points;
+    for (let i = -limit; i <= limit; i += step) {
+        labels.push(i.toFixed(2));
+        data.push(gaussian(i, sigma));
+    }
+    return { labels, data };
+}
 
-        const commonOptions = {
-            responsive: true,
-            animation: { duration: 0 }, 
-            elements: { point: { radius: 0 } }, 
-            scales: {
-                x: { ticks: { maxTicksLimit: 11 } },
-                y: { min: -2.5, max: 2.5 } 
-            },
-            plugins: {
-                legend: { labels: { color: '#333' } } // Mantener texto oscuro para fondo blanco
-            }
-        };
+/* ═══════════════════════════════════════════════
+   PANEL IZQUIERDO: CHART.JS — POSICIÓN
+   ═══════════════════════════════════════════════ */
+const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 0 },
+    elements: { point: { radius: 0 } },
+    scales: {
+        x: { ticks: { maxTicksLimit: 9, font: { size: 10 } } },
+        y: { min: -2.5, max: 2.5, ticks: { font: { size: 10 } } }
+    },
+    plugins: { legend: { labels: { color: '#333', font: { size: 10 }, boxWidth: 12 } } }
+};
 
-        let posChart = new Chart(ctxPos, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { label: '|Ψ(x)|² (Superior)', borderColor: 'rgba(54, 162, 235, 1)', backgroundColor: 'rgba(54, 162, 235, 0.2)', borderWidth: 2, fill: true, data: [] },
-                    { label: '|Ψ(x)|² (Inferior)', borderColor: 'rgba(54, 162, 235, 1)', backgroundColor: 'rgba(54, 162, 235, 0.1)', borderWidth: 2, fill: true, data: [] }
-                ]
-            },
-            options: commonOptions
-        });
+const posChart = new Chart(
+    document.getElementById('positionChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            { label: '|Ψ(x)|² (Superior)', borderColor: 'rgba(54,162,235,1)',  backgroundColor: 'rgba(54,162,235,0.2)', borderWidth: 2, fill: true, data: [] },
+            { label: '|Ψ(x)|² (Inferior)', borderColor: 'rgba(54,162,235,1)',  backgroundColor: 'rgba(54,162,235,0.1)', borderWidth: 2, fill: true, data: [] }
+        ]
+    },
+    options: commonOptions
+});
 
-        let momChart = new Chart(ctxMom, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    { label: '|Φ(k)|² (Superior)', borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', borderWidth: 2, fill: true, data: [] },
-                    { label: '|Φ(k)|² (Inferior)', borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.1)', borderWidth: 2, fill: true, data: [] }
-                ]
-            },
-            options: commonOptions
-        });
+/* ═══════════════════════════════════════════════
+   PANEL DERECHO: CHART.JS — MOMENTO
+   ═══════════════════════════════════════════════ */
+const momChart = new Chart(
+    document.getElementById('momentumChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [
+            { label: '|Φ(k)|² (Superior)', borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(255,99,132,0.2)', borderWidth: 2, fill: true, data: [] },
+            { label: '|Φ(k)|² (Inferior)', borderColor: 'rgba(255,99,132,1)', backgroundColor: 'rgba(255,99,132,0.1)', borderWidth: 2, fill: true, data: [] }
+        ]
+    },
+    options: commonOptions
+});
 
+/* ═══════════════════════════════════════════════
+   CANVAS IZQUIERDO: NUBE DE POSICIÓN
+   ═══════════════════════════════════════════════ */
+const cloudCanvas  = document.getElementById('positionCloud');
+const ctxCloud     = cloudCanvas.getContext('2d');
+let   cloudSigma   = 100;   // radio de la nube en píxeles
 
-        /* =========================================
-           LÓGICA DEL PANEL DERECHO (CANVAS)
-           ========================================= */
-        const canvas = document.getElementById('quantumCanvas');
-        const ctxCanvas = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        
-        const sharedBaseAngle = -Math.PI / 4; 
-        const vectorPoints = [];
-        
-        // Generar puntos aleatorios para los vectores en la nube
-        for(let i = 0; i < 60; i++) {
-            vectorPoints.push({
-                x: (Math.random() - 0.5) * 400,
-                y: (Math.random() - 0.5) * 400,
-                baseAngle: sharedBaseAngle 
-            });
-        }
+function drawPositionCloud() {
+    const W = cloudCanvas.width, H = cloudCanvas.height;
+    const cx = W / 2, cy = H / 2;
+    ctxCloud.clearRect(0, 0, W, H);
 
-        // Variables globales para la animación que se actualizarán con el slider
-        let currentSigmaXCanvas = 100;
-        let currentSigmaPCanvas = 50;
+    // Radio efectivo: clamp para que quepa en el canvas
+    const r = Math.max(8, Math.min(cloudSigma, Math.min(W, H) / 2 - 4));
 
-        function drawArrow(x, y, length, angle) {
-            ctxCanvas.beginPath();
-            ctxCanvas.moveTo(x, y);
-            const endX = x + Math.cos(angle) * length;
-            const endY = y + Math.sin(angle) * length;
-            ctxCanvas.lineTo(endX, endY);
-            
-            const arrowSize = Math.min(length * 0.3, 10);
-            ctxCanvas.lineTo(endX - arrowSize * Math.cos(angle - Math.PI / 6), endY - arrowSize * Math.sin(angle - Math.PI / 6));
-            ctxCanvas.moveTo(endX, endY);
-            ctxCanvas.lineTo(endX - arrowSize * Math.cos(angle + Math.PI / 6), endY - arrowSize * Math.sin(angle + Math.PI / 6));
-            
-            ctxCanvas.strokeStyle = 'rgba(233, 69, 96, 0.8)';
-            ctxCanvas.lineWidth = 2;
-            ctxCanvas.stroke();
-        }
+    const grad = ctxCloud.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0,   'rgba(78, 204, 163, 0.90)');
+    grad.addColorStop(0.45,'rgba(78, 204, 163, 0.45)');
+    grad.addColorStop(0.75,'rgba(78, 204, 163, 0.15)');
+    grad.addColorStop(1,   'rgba(78, 204, 163, 0)');
 
-        function drawCanvasScene() {
-            ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
+    ctxCloud.beginPath();
+    ctxCloud.arc(cx, cy, r, 0, Math.PI * 2);
+    ctxCloud.fillStyle = grad;
+    ctxCloud.fill();
 
-            // Nube de Probabilidad
-            const gradient = ctxCanvas.createRadialGradient(centerX, centerY, 0, centerX, centerY, currentSigmaXCanvas);
-            gradient.addColorStop(0, 'rgba(78, 204, 163, 0.8)');
-            gradient.addColorStop(0.5, 'rgba(78, 204, 163, 0.3)');
-            gradient.addColorStop(1, 'rgba(78, 204, 163, 0)');
+    // Punto central representando la partícula
+    ctxCloud.beginPath();
+    ctxCloud.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctxCloud.fillStyle = '#fff';
+    ctxCloud.fill();
+}
 
-            ctxCanvas.beginPath();
-            ctxCanvas.arc(centerX, centerY, currentSigmaXCanvas, 0, Math.PI * 2);
-            ctxCanvas.fillStyle = gradient;
-            ctxCanvas.fill();
+/* ═══════════════════════════════════════════════
+   CANVAS DERECHO: VECTOR DE MOMENTO ÚNICO
+   ═══════════════════════════════════════════════ */
+const vecCanvas  = document.getElementById('momentumVector');
+const ctxVec     = vecCanvas.getContext('2d');
 
-            // Flechas de Momento
-            vectorPoints.forEach(point => {
-                const distFromCenter = Math.sqrt(point.x*point.x + point.y*point.y);
-                if (distFromCenter < currentSigmaXCanvas * 1.2) {
-                    const randomLength = currentSigmaPCanvas * (0.5 + Math.random() * 0.5);
-                    const randomAngle = point.baseAngle + (Math.random() - 0.5) * (currentSigmaPCanvas / 20);
-                    drawArrow(centerX + point.x, centerY + point.y, randomLength, randomAngle);
-                }
-            });
-        }
+// Estado de animación del vector
+let   baseAngle       = 0;          // dirección "media" del momento
+let   angleDispersion = Math.PI;    // dispersión angular (crece cuando Δk es grande)
+let   arrowLength     = 60;         // longitud de la flecha en píxeles
+let   currentAngle    = 0;          // ángulo animado actual
+let   targetAngle     = 0;          // próximo objetivo de ángulo
 
-        // Bucle de animación independiente para el efecto de vibración
-        function animateCanvas() {
-            drawCanvasScene();
-            requestAnimationFrame(animateCanvas);
-        }
-        animateCanvas();
+// Velocidad de interpolación: cuando hay caos, cambia muy rápido
+let   lerpSpeed       = 0.05;
 
+function drawSingleArrow(cx, cy, length, angle) {
+    const ex = cx + Math.cos(angle) * length;
+    const ey = cy + Math.sin(angle) * length;
+    const aSize = Math.min(length * 0.28, 14);
 
-        /* =========================================
-           CONTROL MAESTRO: SINCRONIZADOR
-           ========================================= */
-        function syncAllVisualizations() {
-            // 1. Leer el valor del deslizador maestro (k)
-            const sigmaK = parseFloat(document.getElementById('masterSlider').value);
-            const sigmaX = 0.5 / sigmaK; 
+    ctxVec.beginPath();
+    ctxVec.moveTo(cx, cy);
+    ctxVec.lineTo(ex, ey);
 
-            // 2. Actualizar textos del Dashboard
-            document.getElementById('masterDk').innerText = `Δk = ${sigmaK.toFixed(4)}`;
-            document.getElementById('masterDx').innerText = `Δx ≈ ${sigmaX.toFixed(4)}`;
+    // Cabeza de flecha
+    ctxVec.lineTo(ex - aSize * Math.cos(angle - Math.PI / 6), ey - aSize * Math.sin(angle - Math.PI / 6));
+    ctxVec.moveTo(ex, ey);
+    ctxVec.lineTo(ex - aSize * Math.cos(angle + Math.PI / 6), ey - aSize * Math.sin(angle + Math.PI / 6));
 
-            // 3. Actualizar Gráficas (Chart.js)
-            const posData = generateData(sigmaX, 8);
-            const momData = generateData(sigmaK, 8);
+    ctxVec.strokeStyle = '#e94560';
+    ctxVec.lineWidth   = 3;
+    ctxVec.lineCap     = 'round';
+    ctxVec.stroke();
+}
 
-            posChart.data.labels = posData.labels;
-            posChart.data.datasets[0].data = posData.data; 
-            posChart.data.datasets[1].data = posData.data.map(y => -y); 
-            posChart.update();
+function drawMomentumVector() {
+    const W = vecCanvas.width, H = vecCanvas.height;
+    const cx = W / 2, cy = H / 2;
+    ctxVec.clearRect(0, 0, W, H);
 
-            momChart.data.labels = momData.labels;
-            momChart.data.datasets[0].data = momData.data; 
-            momChart.data.datasets[1].data = momData.data.map(y => -y); 
-            momChart.update();
+    // Fondo de referencia: línea punteada horizontal (dirección de referencia)
+    ctxVec.setLineDash([4, 6]);
+    ctxVec.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctxVec.lineWidth   = 1;
+    ctxVec.beginPath();
+    ctxVec.moveTo(cx - arrowLength * 1.5, cy);
+    ctxVec.lineTo(cx + arrowLength * 1.5, cy);
+    ctxVec.stroke();
+    ctxVec.setLineDash([]);
 
-            // 4. Transformar los valores matemáticos para la escala visual del Canvas
-            // Multiplicamos sigmaX por un factor de escala (ej. 80) para que se vea bien en pixeles
-            currentSigmaXCanvas = sigmaX * 80;
-            currentSigmaPCanvas = 5000 / currentSigmaXCanvas;
+    // Punto de origen del vector
+    ctxVec.beginPath();
+    ctxVec.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctxVec.fillStyle = 'rgba(233,69,96,0.6)';
+    ctxVec.fill();
 
-            // 5. Actualizar textos divulgativos basados en la escala del canvas
-            const textDiv = document.getElementById('divulgativoText');
-            if (currentSigmaXCanvas < 60) {
-                textDiv.innerHTML = "Precisión en Posición: ALTA (Partícula acorralada) <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: ALTA (Momento caótico)</span>";
-            } else if (currentSigmaXCanvas > 150) {
-                textDiv.innerHTML = "Precisión en Posición: BAJA (Nube muy difusa) <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: BAJA (Momento altamente predecible)</span>";
-            } else {
-                textDiv.innerHTML = "Precisión en Posición: Media <br> <span style='color:#e94560;'>Incertidumbre en Velocidad: Media</span>";
-            }
-        }
+    // Vector principal
+    drawSingleArrow(cx, cy, arrowLength, currentAngle);
 
-        // Escuchar el deslizador maestro
-        document.getElementById('masterSlider').addEventListener('input', syncAllVisualizations);
+    // Arco de incertidumbre angular (muestra visualmente Δk)
+    if (angleDispersion > 0.05) {
+        ctxVec.beginPath();
+        ctxVec.arc(cx, cy, arrowLength * 0.55,
+                   currentAngle - angleDispersion / 2,
+                   currentAngle + angleDispersion / 2);
+        ctxVec.strokeStyle = 'rgba(233,69,96,0.20)';
+        ctxVec.lineWidth   = arrowLength * 0.35;
+        ctxVec.stroke();
+    }
+}
 
-        // Disparo inicial para alinear todo al cargar la página
-        syncAllVisualizations();
-    </script>
+/* ── Animación del vector: interpolación hacia target ── */
+let frameCount = 0;
+
+function animateVector() {
+    frameCount++;
+
+    // Cada N frames, elegir nuevo targetAngle (N pequeño = caótico, N grande = estable)
+    const changeEvery = Math.max(2, Math.round(40 * (1 - angleDispersion / Math.PI)));
+    if (frameCount % changeEvery === 0) {
+        targetAngle = baseAngle + (Math.random() - 0.5) * angleDispersion * 2;
+    }
+
+    // Interpolar currentAngle → targetAngle
+    const alpha = Math.min(1, lerpSpeed + angleDispersion * 0.15);
+    currentAngle += (targetAngle - currentAngle) * alpha;
+
+    drawMomentumVector();
+    requestAnimationFrame(animateVector);
+}
+
+/* ── Animación de la nube (re-dibuja cada frame para suavidad) ── */
+function animateCloud() {
+    drawPositionCloud();
+    requestAnimationFrame(animateCloud);
+}
+
+animateVector();
+animateCloud();
+
+/* ═══════════════════════════════════════════════
+   CONTROL MAESTRO: SINCRONIZADOR
+   ═══════════════════════════════════════════════ */
+function syncAllVisualizations() {
+    const sigmaK = parseFloat(document.getElementById('masterSlider').value);
+    const sigmaX = 0.5 / sigmaK;
+
+    // ── Textos del header ──
+    document.getElementById('masterDk').innerText = `Δk = ${sigmaK.toFixed(4)}`;
+    document.getElementById('masterDx').innerText = `Δx ≈ ${sigmaX.toFixed(4)}`;
+
+    // ── Gráficas Chart.js ──
+    const posData = generateData(sigmaX, 8);
+    const momData = generateData(sigmaK, 8);
+
+    posChart.data.labels = posData.labels;
+    posChart.data.datasets[0].data = posData.data;
+    posChart.data.datasets[1].data = posData.data.map(y => -y);
+    posChart.update();
+
+    momChart.data.labels = momData.labels;
+    momChart.data.datasets[0].data = momData.data;
+    momChart.data.datasets[1].data = momData.data.map(y => -y);
+    momChart.update();
+
+    // ── Nube de posición ──
+    // sigmaX grande → nube grande; máximo clampeado visualmente a ~90px
+    cloudSigma = Math.min(90, sigmaX * 75);
+
+    // ── Vector de momento ──
+    // sigmaK grande (momento impreciso) → dispersión angular alta, caos
+    // sigmaK pequeño (momento preciso)  → flecha casi fija
+    angleDispersion = Math.min(Math.PI * 0.95, sigmaK * 0.9); // 0 … ~2.7 rad
+    arrowLength     = 30 + sigmaK * 18;                        // flecha más larga cuando Δk es mayor
+    lerpSpeed       = 0.04 + sigmaK * 0.12;                    // lerp más rápido = más caótico
+
+    // ── Textos divulgativos ──
+    // --- Posición ---
+    const txtPos = document.getElementById('textPosition');
+    if (sigmaX < 0.25) {
+        txtPos.innerHTML = "<span style='color:#4ecca3'>Posición muy bien definida</span><br>La partícula está fuertemente localizada.";
+    } else if (sigmaX > 1.5) {
+        txtPos.innerHTML = "<span style='color:#e94560'>Posición muy difusa</span><br>La partícula está deslocalizada en el espacio.";
+    } else {
+        txtPos.innerHTML = "Precisión en Posición: <strong>Media</strong>";
+    }
+
+    // --- Momento ---
+    const txtMom = document.getElementById('textMomentum');
+    if (sigmaK < 0.3) {
+        txtMom.innerHTML = "<span style='color:#4ecca3'>Momento muy bien definido</span><br>El vector apunta a una dirección casi fija.";
+    } else if (sigmaK > 1.8) {
+        txtMom.innerHTML = "<span style='color:#e94560'>Momento caótico</span><br>La dirección del vector fluctúa sin orden.";
+    } else {
+        txtMom.innerHTML = "Incertidumbre en Momento: <strong>Media</strong>";
+    }
+}
+
+document.getElementById('masterSlider').addEventListener('input', syncAllVisualizations);
+syncAllVisualizations();
+</script>
 </body>
 </html>
