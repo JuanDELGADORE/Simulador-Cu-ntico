@@ -3,156 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espacio de Fases Cuántico - Función de Wigner</title>
-    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <title>Principio de Incertidumbre - Visualización Divulgativa</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            max-width: 1000px;
+            background-color: #1a1a2e;
+            color: #fff;
+            max-width: 900px;
             margin: 0 auto;
             padding: 20px;
-        }
-        .header {
             text-align: center;
-            margin-bottom: 30px;
         }
         .controls-container {
-            background: white;
+            background: #16213e;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             margin-bottom: 20px;
-            text-align: center;
-        }
-        .slider-wrapper {
-            margin: 20px 0;
         }
         input[type=range] {
             width: 80%;
             max-width: 400px;
+            cursor: pointer;
+        }
+        .slider-wrapper {
+            margin: 15px 0;
+        }
+        canvas {
+            background-color: #0f3460;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 100%;
+            height: auto;
         }
         .stats {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 40px;
             font-size: 1.2em;
-            font-weight: bold;
-            color: #2c3e50;
             margin-top: 15px;
+            color: #e94560;
+            font-weight: bold;
         }
-        .chart-box {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 100%;
-            height: 600px;
+        p.description {
+            color: #a2a2bd;
+            font-size: 1.1em;
+            margin-bottom: 25px;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Simulador: Función de Wigner en el Espacio de Fases</h1>
-        <p>Visualización del límite incompresible del Principio de Incertidumbre para un estado Gaussiano.</p>
-    </div>
+    <h1>¿Dónde está y hacia dónde va?</h1>
+    <p class="description">El Principio de Incertidumbre nos dice que no podemos conocer con exactitud ambas cosas a la vez.<br>Ajusta el tamaño de la nube (posición) y observa qué le pasa a las flechas (momento/velocidad).</p>
 
     <div class="controls-container">
-        <h3>Control del Estado Cuántico</h3>
         <div class="slider-wrapper">
-            <label for="sigmaKSlider"><strong>Δp (Incertidumbre en momento):</strong> <span id="kValue">1.00</span></label><br>
-            <input type="range" id="sigmaKSlider" min="0.25" max="2.0" step="0.05" value="1.0">
+            <label for="uncertaintySlider"><strong>Tamaño de la Nube (Incertidumbre en Posición - Δx)</strong></label><br><br>
+            <input type="range" id="uncertaintySlider" min="20" max="250" step="1" value="150">
         </div>
         
         <div class="stats">
-            <div id="dxDisplay">Δx = 0.5000</div>
-            <div id="productDisplay">Δx × Δp = 0.5000 (Límite ħ/2)</div>
+            <div id="dxDisplay">Precisión en Posición: Baja</div>
+            <div id="dpDisplay">Incertidumbre en Momento: Baja</div>
         </div>
     </div>
 
-    <div class="chart-box">
-        <div id="wignerPlot" style="width: 100%; height: 100%;"></div>
-    </div>
+    <canvas id="quantumCanvas" width="800" height="500"></canvas>
 
     <script>
-        // Configuración de la malla (Grid)
-        const gridSize = 100;
-        const limit = 4;
-        const xValues = [];
-        const pValues = [];
+        const canvas = document.getElementById('quantumCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('uncertaintySlider');
+        const dxDisplay = document.getElementById('dxDisplay');
+        const dpDisplay = document.getElementById('dpDisplay');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
         
-        for (let i = 0; i <= gridSize; i++) {
-            let val = -limit + (2 * limit * i) / gridSize;
-            xValues.push(val);
-            pValues.push(val);
+        // Generamos posiciones aleatorias fijas para las flechas dentro de un área máxima
+        const vectorPoints = [];
+        for(let i = 0; i < 60; i++) {
+            vectorPoints.push({
+                x: (Math.random() - 0.5) * 400,
+                y: (Math.random() - 0.5) * 400,
+                baseAngle: Math.random() * Math.PI * 2
+            });
         }
 
-        // Función para calcular la matriz de Wigner W(x, p)
-        function calculateWignerMatrix(sigmaP) {
-            const sigmaX = 0.5 / sigmaP; // Relación estricta del paquete gaussiano
-            const zValues = [];
+        function drawArrow(x, y, length, angle) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            const endX = x + Math.cos(angle) * length;
+            const endY = y + Math.sin(angle) * length;
+            ctx.lineTo(endX, endY);
+            
+            // Cabeza de la flecha
+            const arrowSize = Math.min(length * 0.3, 10);
+            ctx.lineTo(endX - arrowSize * Math.cos(angle - Math.PI / 6), endY - arrowSize * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - arrowSize * Math.cos(angle + Math.PI / 6), endY - arrowSize * Math.sin(angle + Math.PI / 6));
+            
+            ctx.strokeStyle = 'rgba(233, 69, 96, 0.8)'; // Color rojizo para el momento
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
 
-            for (let i = 0; i < pValues.length; i++) {
-                const p = pValues[i];
-                const row = [];
-                for (let j = 0; j < xValues.length; j++) {
-                    const x = xValues[j];
-                    // W(x,p) para un paquete gaussiano (con hbar = 1)
-                    // W(x,p) = (1/pi) * exp( -x^2/(2*sigmaX^2) - p^2/(2*sigmaP^2) )
-                    const exponent = -Math.pow(x, 2) / (2 * Math.pow(sigmaX, 2)) - Math.pow(p, 2) / (2 * Math.pow(sigmaP, 2));
-                    const w = (1 / Math.PI) * Math.exp(exponent);
-                    row.push(w);
+        function drawScene() {
+            // Limpiar lienzo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Obtener valor de delta X (radio de la nube)
+            const sigmaX = parseFloat(slider.value);
+            
+            // Calcular delta P (momento) inversamente proporcional
+            // Constante arbitraria para que se vea bien en pantalla
+            const sigmaP = 5000 / sigmaX; 
+
+            // 1. Dibujar la Nube de Probabilidad (Posición)
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, sigmaX);
+            gradient.addColorStop(0, 'rgba(78, 204, 163, 0.8)'); // Centro brillante
+            gradient.addColorStop(0.5, 'rgba(78, 204, 163, 0.3)');
+            gradient.addColorStop(1, 'rgba(78, 204, 163, 0)'); // Borde difuminado
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, sigmaX, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // 2. Dibujar las flechas de Momento
+            vectorPoints.forEach(point => {
+                // Solo dibujar flechas que caigan más o menos dentro de la nube actual
+                const distFromCenter = Math.sqrt(point.x*point.x + point.y*point.y);
+                if (distFromCenter < sigmaX * 1.2) {
+                    
+                    // La longitud y la variación del ángulo dependen de la incertidumbre del momento (sigmaP)
+                    const randomLength = sigmaP * (0.5 + Math.random() * 0.5);
+                    const randomAngle = point.baseAngle + (Math.random() - 0.5) * (sigmaP / 20);
+
+                    drawArrow(centerX + point.x, centerY + point.y, randomLength, randomAngle);
                 }
-                zValues.push(row);
+            });
+
+            // 3. Actualizar textos de la interfaz para ser divulgativos
+            if (sigmaX < 60) {
+                dxDisplay.innerText = "Precisión en Posición: ALTA (Lo tenemos arrinconado)";
+                dpDisplay.innerText = "Incertidumbre en Velocidad: ALTA (Momento caótico)";
+            } else if (sigmaX > 180) {
+                dxDisplay.innerText = "Precisión en Posición: BAJA (Nube difusa)";
+                dpDisplay.innerText = "Incertidumbre en Velocidad: BAJA (Momento predecible)";
+            } else {
+                dxDisplay.innerText = "Precisión en Posición: Media";
+                dpDisplay.innerText = "Incertidumbre en Velocidad: Media";
             }
-            return { zValues, sigmaX };
         }
 
-        // Renderizado inicial con Plotly
-        const initialSigmaP = 1.0;
-        const initialData = calculateWignerMatrix(initialSigmaP);
-
-        const data = [{
-            z: initialData.zValues,
-            x: xValues,
-            y: pValues,
-            type: 'contour', // Mapa de contorno topográfico
-            colorscale: 'Portland',
-            contours: {
-                coloring: 'heatmap'
-            },
-            colorbar: {
-                title: 'W(x,p)',
-                titleside: 'right'
-            }
-        }];
-
-        const layout = {
-            title: 'Distribución de Cuasiprobabilidad W(x,p)',
-            xaxis: { title: 'Posición (x)', range: [-limit, limit] },
-            yaxis: { title: 'Momento (p)', range: [-limit, limit] },
-            autosize: true,
-            margin: { l: 60, r: 20, b: 60, t: 40 }
-        };
-
-        Plotly.newPlot('wignerPlot', data, layout, {responsive: true});
-
-        // Función de actualización interactiva
-        function updatePlot() {
-            const sigmaP = parseFloat(document.getElementById('sigmaKSlider').value);
-            const { zValues, sigmaX } = calculateWignerMatrix(sigmaP);
-
-            // Actualizar interfaz
-            document.getElementById('kValue').innerText = sigmaP.toFixed(2);
-            document.getElementById('dxDisplay').innerText = `Δx = ${sigmaX.toFixed(4)}`;
-
-            // Actualizar los datos Z de la gráfica de Plotly sin recargar todo el layout
-            Plotly.update('wignerPlot', { z: [zValues] });
+        // Animar para que el momento "vibre" y se sienta caótico
+        function animate() {
+            drawScene();
+            requestAnimationFrame(animate);
         }
 
-        // Escuchar cambios en el deslizador (usamos 'input' para actualización en tiempo real)
-        document.getElementById('sigmaKSlider').addEventListener('input', updatePlot);
+        // Iniciar
+        animate();
     </script>
 </body>
 </html>
